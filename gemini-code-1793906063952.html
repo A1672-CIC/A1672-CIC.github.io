@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel do Locutor - Rádio Escola</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #121212; color: #fff; padding: 20px; margin: 0; }
+        .container { max-width: 900px; margin: 0 auto; }
+        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ff5722; padding-bottom: 15px; margin-bottom: 20px; }
+        h1 { margin: 0; color: #ff5722; font-size: 24px; }
+        .status { background: #222; padding: 6px 12px; border-radius: 20px; font-size: 14px; border: 1px solid #333; }
+        table { width: 100%; border-collapse: collapse; background: #1e1e1e; border-radius: 8px; overflow: hidden; }
+        th, td { padding: 14px; text-align: left; border-bottom: 1px solid #333; }
+        th { background: #292929; color: #ff5722; font-size: 14px; text-transform: uppercase; }
+        tr:hover { background: #252525; }
+        .btn-tocar { background: #4caf50; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-tocar:hover { background: #45a049; }
+        .btn-apagar { background: #f44336; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; margin-left: 5px; }
+        .btn-apagar:hover { background: #da190b; }
+        .sem-pedidos { text-align: center; padding: 30px; color: #888; }
+        .hora { color: #aaa; font-size: 13px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>📻 Rádio Escola — Painel de Pedidos</h1>
+            <span class="status">🟢 Ao Vivo (Tempo Real)</span>
+        </header>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Hora</th>
+                    <th>Ouvinte / Turma</th>
+                    <th>Música</th>
+                    <th>Artista</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="listaPedidos">
+                <tr>
+                    <td colspan="5" class="sem-pedidos">A carregar pedidos...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Firebase SDK Modules -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, query, orderBy, onSnapshot, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // Substitui com a tua configuração idêntica à do index.html
+        const firebaseConfig = {
+            apiKey: "AIzaSyAkxXQVc7I0mtl2VRP1--Et--udWoRYfCk",
+            authDomain: "radio-cic-test.firebaseapp.com",
+            projectId: "radio-cic-test",
+            storageBucket: "radio-cic-test.firebasestorage.app",
+            messagingSenderId: "575971205539",
+            appId: "1:575971205539:web:e42de29190401a1dc13a16",
+            measurementId: "G-QVRXDG59NN"
+};
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const tabela = document.getElementById('listaPedidos');
+
+        // Consulta ordenada por data (pedidos mais recentes no topo)
+        const q = query(collection(db, "pedidos"), orderBy("data", "desc"));
+
+        // Escuta atualizações em tempo real
+        onSnapshot(q, (snapshot) => {
+            tabela.innerHTML = "";
+
+            if (snapshot.empty) {
+                tabela.innerHTML = `<tr><td colspan="5" class="sem-pedidos">Nenhum pedido pendente de momento.</td></tr>`;
+                return;
+            }
+
+            snapshot.forEach((docSnapshot) => {
+                const item = docSnapshot.data();
+                const id = docSnapshot.id;
+                
+                // Formatar a data/hora recebida do Firestore
+                let horaFormatada = "--:--";
+                if (item.data && item.data.toDate) {
+                    horaFormatada = item.data.toDate().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+                }
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="hora">${horaFormatada}</td>
+                    <td><strong>${escapeHtml(item.nome || 'Anónimo')}</strong></td>
+                    <td style="color: #ffb74d;"><strong>${escapeHtml(item.musica || '-')}</strong></td>
+                    <td>${escapeHtml(item.artista || '-')}</td>
+                    <td>
+                        <button class="btn-tocar" onclick="concluirPedido('${id}')">✓ Tocada</button>
+                        <button class="btn-apagar" onclick="concluirPedido('${id}')">✕</button>
+                    </td>
+                `;
+                tabela.appendChild(tr);
+            });
+        });
+
+        // Função global para eliminar o pedido da lista assim que for tocado
+        window.concluirPedido = async (id) => {
+            try {
+                await deleteDoc(doc(db, "pedidos", id));
+            } catch (err) {
+                console.error("Erro ao remover pedido:", err);
+            }
+        };
+
+        // Função auxiliar para evitar injeção de HTML
+        function escapeHtml(text) {
+            return text.replace(/[&<>"']/g, (m) => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+            })[m]);
+        }
+    </script>
+</body>
+</html>
