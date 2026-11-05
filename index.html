@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pedir Música - Rádio Escola</title>
+    <!-- Estilos simples para ficar bonito -->
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f9; color: #333; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+        h2 { text-align: center; color: #ff5722; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #ff5722; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; }
+        button:hover { background: #e64a19; }
+        #mensagem { text-align: center; margin-top: 15px; font-weight: bold; color: green; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>Rádio Escola 📻</h2>
+        <p style="text-align: center; color: #666;">Pede a tua música favorita!</p>
+        
+        <form id="formPedido">
+            <div class="form-group">
+                <label for="nome">O teu Nome / Turma:</label>
+                <input type="text" id="nome" required placeholder="Ex: João - 10ºB">
+            </div>
+            <div class="form-group">
+                <label for="artista">Artista / Banda:</label>
+                <input type="text" id="artista" required placeholder="Ex: Imagine Dragons">
+            </div>
+            <div class="form-group">
+                <label for="musica">Nome da Música:</label>
+                <input type="text" id="musica" required placeholder="Ex: Enemy">
+            </div>
+            <button type="submit">Enviar Pedido 🎵</button>
+        </form>
+        <div id="mensagem"></div>
+    </div>
+
+    <!-- Importar o Firebase via CDN -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // Configuração do Firebase (Substitui com os teus dados)
+        const firebaseConfig = {
+            apiKey: "AIzaSyAkxXQVc7I0mtl2VRP1--Et--udWoRYfCk",
+            authDomain: "radio-cic-test.firebaseapp.com",
+            projectId: "radio-cic-test",
+            storageBucket: "radio-cic-test.firebasestorage.app",
+            messagingSenderId: "575971205539",
+            appId: "1:575971205539:web:e42de29190401a1dc13a16",
+            measurementId: "G-QVRXDG59NN"
+};
+
+        // Inicializar Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const form = document.getElementById('formPedido');
+        const mensagem = document.getElementById('mensagem');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const nome = document.getElementById('nome').value;
+            const artista = document.getElementById('artista').value;
+            const musica = document.getElementById('musica').value;
+
+            try {
+                // Enviar para a coleção 'pedidos' no Firestore
+                await addDoc(collection(db, "pedidos"), {
+                    nome: nome,
+                    artista: artista,
+                    musica: musica,
+                    data: serverTimestamp()
+                });
+
+                mensagem.innerText = "Pedido enviado com sucesso! 🎶";
+                form.reset();
+
+                setTimeout(() => {
+                    mensagem.innerText = "";
+                }, 4000);
+
+            } catch (error) {
+                console.error("Erro ao enviar pedido: ", error);
+                mensagem.style.color = "red";
+                mensagem.innerText = "Erro ao enviar. Tenta novamente.";
+            }
+        });
+    </script>
+</body>
+</html>
